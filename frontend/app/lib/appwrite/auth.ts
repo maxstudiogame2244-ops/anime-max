@@ -14,7 +14,7 @@ export async function getCurrentUser(): Promise<AppwriteUser | null> {
   try {
     const user = await account.get();
     return user as unknown as AppwriteUser;
-  } catch (error) {
+  } catch {
     return null;
   }
 }

@@ -190,7 +190,8 @@ function NotificationsContainer() {
         (mediaNotification) => mediaNotification.isComplete == false
       );
 
-    const finishedMediasNotifications: NotificationsCollectionFirebase[] =
+    // Filter finished media notifications (kept for potential future use)
+    const _finishedMediasNotifications: NotificationsCollectionFirebase[] =
       notificationsList.filter(
         (mediaNotification) => mediaNotification.isComplete == true
       );

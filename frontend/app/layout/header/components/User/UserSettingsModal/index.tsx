@@ -23,7 +23,6 @@ import {
   updateUserProfile,
   deleteUserAccount,
   signOut,
-  type AppwriteUser,
 } from "@/app/lib/appwrite";
 
 type SettingsTypes = {

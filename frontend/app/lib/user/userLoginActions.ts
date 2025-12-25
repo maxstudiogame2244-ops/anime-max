@@ -1,4 +1,4 @@
-import { createUserDocument, updateUserDocument, addToBookmarks } from "@/app/lib/appwrite/database";
+import { createUserDocument, addToBookmarks } from "@/app/lib/appwrite/database";
 import { addUserCookies } from "./anilistUserLoginOptions";
 import { AppwriteUser } from "@/app/lib/appwrite/auth";
 

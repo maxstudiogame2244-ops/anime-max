@@ -34,7 +34,6 @@ import { getToonStreamEpisodeUrl, ToonStreamEpisode } from "@/app/api/episodes/t
 import { useAuthState } from "@/app/lib/appwrite/useAuth";
 import {
   getUserDocument,
-  updateUserDocument,
   updateKeepWatching,
   updateEpisodesWatched,
 } from "@/app/lib/appwrite/database";

@@ -7,7 +7,6 @@ import AnonymousSvg from "@/public/assets/person-fill.svg";
 import CloseSvg from "@/public/assets/x.svg";
 import LoadingSvg from "@/public/assets/Eclipse-1s-200px.svg";
 import AnilistSvg from "@/public/assets/anilist.svg";
-import ProfileFallbackImg from "@/public/profile_fallback.jpg";
 import UserSettingsModal from "@/app/layout/header/components/User/UserSettingsModal";
 import { createNewUserDocument } from "@/app/lib/user/userLoginActions";
 import {
@@ -15,7 +14,6 @@ import {
   useSignIn,
   useSignUp,
   signInWithGoogle,
-  type AppwriteUser,
 } from "@/app/lib/appwrite";
 
 type ModalTypes = {
