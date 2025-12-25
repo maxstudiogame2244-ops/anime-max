@@ -30,7 +30,7 @@ export default function MarkChapterAsReadButton({
 
   const anilistUser = useAppSelector((state) => state.UserInfo.value);
 
-  const { user } = useAuthState();
+  const [user] = useAuthState();
 
   useEffect(() => {
     if (!user && !anilistUser) return;

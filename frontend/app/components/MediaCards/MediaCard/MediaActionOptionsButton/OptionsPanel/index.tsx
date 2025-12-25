@@ -61,7 +61,7 @@ export default function OptionsPanel({
 
   const anilistUser = useAppSelector((state) => state.UserInfo.value);
 
-  const { user } = useAuthState();
+  const [user] = useAuthState();
 
   useEffect(() => {
     if (!mediaInfo.mediaListEntry?.status && user) {
@@ -121,8 +121,8 @@ export default function OptionsPanel({
       );
 
       await removeMediaOnListByStatus({
-        newListFiltered: filterNewList,
         status: mediaStatus,
+        mediaId: mediaInfo.id,
         userId: user?.$id || `${anilistUser?.id}`,
       });
 

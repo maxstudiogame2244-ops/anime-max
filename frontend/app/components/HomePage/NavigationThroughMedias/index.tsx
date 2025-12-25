@@ -74,7 +74,7 @@ function NavigationThroughMedias({
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [mediaSelect, setMediaSelected] = useState<MediaData | null>(null);
 
-  const { user } = useAuthState();
+  const [user] = useAuthState();
 
   useEffect(() => {
     if (sortBy == "RELEASE") fetchMediaListByDays(0);

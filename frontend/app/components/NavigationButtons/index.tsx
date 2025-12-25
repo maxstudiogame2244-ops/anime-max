@@ -12,9 +12,9 @@ import { searchToonStream } from "@/app/api/episodes/toonstream/episodesInfo";
 type PropsType = {
   propsFunction: (parameter: string | number) => void;
   buttonOptions: {
-    isAvailable: boolean;
+    isAvailable?: boolean;
     name: string;
-    value: SourceType["source"];
+    value: SourceType["source"] | string;
   }[];
   currValue?: string | number;
   sepateBtnsWithSpan?: boolean;

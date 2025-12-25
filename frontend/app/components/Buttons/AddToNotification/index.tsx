@@ -25,7 +25,7 @@ function AddToNotificationsButton({
   const anilistUser = useAppSelector((state) => state.UserInfo.value);
   const dispatch = useAppDispatch();
 
-  const { user, loading } = useAuthState();
+  const [user, loading] = useAuthState();
 
   useEffect(() => {
     if (!loading) {

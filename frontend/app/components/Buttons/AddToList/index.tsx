@@ -39,7 +39,7 @@ export function Button({
   const anilistUser = useAppSelector((state) => state.UserInfo.value);
   const dispatch = useAppDispatch();
 
-  const { user } = useAuthState();
+  const [user] = useAuthState();
 
   useEffect(() => {
     if (!statusOnAnilist && user) {
@@ -133,8 +133,8 @@ export function Button({
       );
 
       await removeMediaOnListByStatus({
-        newListFiltered: filterNewList,
         status: mediaStatus,
+        mediaId: mediaInfo.id,
         userId: user?.$id || `${anilistUser?.id}`,
       });
 

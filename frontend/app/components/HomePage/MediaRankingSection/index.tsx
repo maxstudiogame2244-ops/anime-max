@@ -33,7 +33,7 @@ function MediaRankingSection({
   >(null);
   const [currFormat, setCurrFormat] = useState<"ANIME" | "MANGA">("ANIME");
 
-  const { user } = useAuthState();
+  const [user] = useAuthState();
 
   async function getUserPreference() {
     if (!user) return false;
