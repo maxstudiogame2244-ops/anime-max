@@ -18,8 +18,7 @@ import * as AddToFavourites from "../../Buttons/AddToFavourites";
 import parse from "html-react-parser";
 import ScoreRating from "../../DynamicAssets/ScoreRating";
 import MediaFormatIcon from "../../DynamicAssets/MediaFormatIcon";
-import { useAuthState } from "react-firebase-hooks/auth";
-import { getAuth } from "firebase/auth";
+import { useAuthState } from "@/app/lib/appwrite";
 import SwiperCarousel from "./swiperCarousel";
 import { SwiperSlide } from "swiper/react";
 import { convertToUnix } from "@/app/lib/formatDateUnix";
@@ -75,13 +74,12 @@ function NavigationThroughMedias({
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [mediaSelect, setMediaSelected] = useState<MediaData | null>(null);
 
+  const { user } = useAuthState();
+
   useEffect(() => {
     if (sortBy == "RELEASE") fetchMediaListByDays(0);
     else fetchMediaList();
   }, []);
-
-  const auth = getAuth();
-  const [user] = useAuthState(auth);
 
   async function getUserPreference() {
     if (!user) return false;
@@ -89,7 +87,7 @@ function NavigationThroughMedias({
     if (isAdultContentSetToShow) return isAdultContentSetToShow;
 
     const userAdultContentPreference: boolean =
-      await getUserAdultContentPreference(user.uid);
+      await getUserAdultContentPreference(user.$id);
 
     setIsAdultContentSetToShow(userAdultContentPreference);
 

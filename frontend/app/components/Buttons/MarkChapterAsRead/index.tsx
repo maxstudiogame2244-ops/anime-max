@@ -2,18 +2,7 @@
 import React, { useEffect, useState } from "react";
 import CheckSvg from "@/public/assets/check-circle.svg";
 import CheckFillSvg from "@/public/assets/check-circle-fill.svg";
-import { getAuth } from "firebase/auth";
-import { useAuthState } from "react-firebase-hooks/auth";
-import {
-  FieldPath,
-  arrayRemove,
-  arrayUnion,
-  doc,
-  getDoc,
-  getFirestore,
-  setDoc,
-} from "firebase/firestore";
-import { initFirebase } from "@/app/firebaseApp";
+import { useAuthState, getUserDocument, updateUserDocument } from "@/app/lib/appwrite";
 import styles from "./component.module.css";
 import { AnimatePresence, motion } from "framer-motion";
 import { useAppSelector } from "@/app/lib/redux/hooks";
@@ -41,11 +30,7 @@ export default function MarkChapterAsReadButton({
 
   const anilistUser = useAppSelector((state) => state.UserInfo.value);
 
-  const auth = getAuth();
-
-  const [user] = useAuthState(auth);
-
-  const db = getFirestore(initFirebase());
+  const { user } = useAuthState();
 
   useEffect(() => {
     if (!user && !anilistUser) return;
@@ -59,15 +44,15 @@ export default function MarkChapterAsReadButton({
 
     if (!user && !anilistUser) return;
 
-    const userDoc = await getDoc(
-      doc(db, "users", user?.uid || `${anilistUser?.id}`)
-    );
+    const userId = user?.$id || `${anilistUser?.id}`;
+    const userDoc = await getUserDocument(userId);
 
-    const chapterRead = userDoc
-      .get("chaptersRead")
-      [mediaId]?.find(
-        (item: { chapterNumber: number }) => item.chapterNumber == chapterNumber
-      );
+    if (!userDoc) return;
+
+    const chaptersRead = userDoc.chaptersRead ? JSON.parse(userDoc.chaptersRead) : {};
+    const chapterRead = chaptersRead[mediaId]?.find(
+      (item: { chapterNumber: number }) => item.chapterNumber == chapterNumber
+    );
 
     if (chapterRead) setWasChapterRead(true);
   }
@@ -77,36 +62,53 @@ export default function MarkChapterAsReadButton({
 
     setIsLoading(true);
 
+    const userId = user?.$id || `${anilistUser?.id}`;
+    const userDoc = await getUserDocument(userId);
+
+    if (!userDoc) {
+      setIsLoading(false);
+      return;
+    }
+
+    const chaptersRead = userDoc.chaptersRead ? JSON.parse(userDoc.chaptersRead) : {};
+    const mediaChapters = chaptersRead[mediaId] || [];
+
     const mangaChapterInfo = {
       mediaId: mediaId,
       chapterNumber: chapterNumber,
       chapterTitle: chapterTitle,
     };
 
-    await setDoc(
-      doc(db, "users", user?.uid || `${anilistUser?.id}`),
-      {
-        chaptersRead: {
-          [mediaId]: !wasChapterRead
-            ? arrayUnion(...[mangaChapterInfo])
-            : arrayRemove(...[mangaChapterInfo]),
-        },
-      } as unknown as FieldPath,
-      { merge: true }
-    ).then(async () => {
-      if (anilistUser) {
-        await anilistUsers.addMediaToSelectedList({
-          mediaId: mediaId,
-          status: maxChaptersNumber == chapterNumber ? "COMPLETED" : "CURRENT",
-          episodeOrChapterNumber: wasChapterRead
-            ? chapterNumber - 1
-            : chapterNumber,
-        });
+    if (!wasChapterRead) {
+      // Add chapter
+      mediaChapters.push(mangaChapterInfo);
+    } else {
+      // Remove chapter
+      const index = mediaChapters.findIndex(
+        (item: { chapterNumber: number }) => item.chapterNumber === chapterNumber
+      );
+      if (index > -1) {
+        mediaChapters.splice(index, 1);
       }
+    }
 
-      setWasChapterRead(!wasChapterRead);
+    chaptersRead[mediaId] = mediaChapters;
+
+    await updateUserDocument(userId, {
+      chaptersRead: JSON.stringify(chaptersRead),
     });
 
+    if (anilistUser) {
+      await anilistUsers.addMediaToSelectedList({
+        mediaId: mediaId,
+        status: maxChaptersNumber == chapterNumber ? "COMPLETED" : "CURRENT",
+        episodeOrChapterNumber: wasChapterRead
+          ? chapterNumber - 1
+          : chapterNumber,
+      });
+    }
+
+    setWasChapterRead(!wasChapterRead);
     setIsLoading(false);
   }
 

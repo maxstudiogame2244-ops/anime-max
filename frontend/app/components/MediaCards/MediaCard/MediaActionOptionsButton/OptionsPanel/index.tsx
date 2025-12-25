@@ -1,15 +1,12 @@
 import * as AddToFavourites from "@/app/components/Buttons/AddToFavourites";
 import { userMediaStatusEntries } from "@/app/lib/dataConstants/anilist";
 import anilistUsers from "@/app/api/anilist/anilistUsers";
-import { initFirebase } from "@/app/firebaseApp";
 import { useAppSelector } from "@/app/lib/redux/hooks";
 import {
   removeMediaOnListByStatus,
   updateUserMediaListByStatus,
 } from "@/app/lib/user/userDocUpdateOptions";
-import { getAuth } from "firebase/auth";
-import { getFirestore, getDoc, doc } from "firebase/firestore";
-import { useAuthState } from "react-firebase-hooks/auth";
+import { useAuthState, getUserDocument } from "@/app/lib/appwrite";
 import FavouriteSvgFill from "@/public/assets/heart-fill.svg";
 import FavouriteSvg from "@/public/assets/heart.svg";
 import CheckFillSvg from "@/public/assets/check-circle-fill.svg";
@@ -64,25 +61,20 @@ export default function OptionsPanel({
 
   const anilistUser = useAppSelector((state) => state.UserInfo.value);
 
-  const auth = getAuth();
-
-  const [user] = useAuthState(auth);
-
-  const db = getFirestore(initFirebase());
+  const { user } = useAuthState();
 
   useEffect(() => {
     if (!mediaInfo.mediaListEntry?.status && user) {
       isMediaOnUserDoc();
     }
-  }, [mediaListEntryInfo?.status]);
+  }, [mediaListEntryInfo?.status, user]);
 
   // IF MEDIA ID MATCHS ANY RESULT ON DB, IT SETS THIS COMPONENT BUTTON AS ACTIVE
   async function isMediaOnUserDoc() {
     if (!user) return;
 
-    const userMediaLists = await getDoc(doc(db, "users", user.uid)).then(
-      (res) => res.data()?.mediaListSavedByStatus
-    );
+    const userDoc = await getUserDocument(user.$id);
+    const userMediaLists = userDoc?.mediaListSavedByStatus ? JSON.parse(userDoc.mediaListSavedByStatus) : null;
 
     if (!userMediaLists) return;
 
@@ -120,11 +112,9 @@ export default function OptionsPanel({
 
     // Remove from curr list
     if (mediaStatus) {
-      const userMediaList = await getDoc(
-        doc(db, "users", user?.uid || `${anilistUser?.id}`)
-      ).then(
-        (res) => res.data()?.mediaListSavedByStatus[mediaStatus.toLowerCase()]
-      );
+      const userDoc = await getUserDocument(user?.$id || `${anilistUser?.id}`);
+      const userMediaLists = userDoc?.mediaListSavedByStatus ? JSON.parse(userDoc.mediaListSavedByStatus) : {};
+      const userMediaList = userMediaLists[mediaStatus.toLowerCase()] || [];
 
       const filterNewList = userMediaList.filter(
         (media: { id: number }) => media.id != mediaInfo.id
@@ -133,7 +123,7 @@ export default function OptionsPanel({
       await removeMediaOnListByStatus({
         newListFiltered: filterNewList,
         status: mediaStatus,
-        userId: user?.uid || `${anilistUser?.id}`,
+        userId: user?.$id || `${anilistUser?.id}`,
       });
 
       // Remove from anilist list
@@ -156,7 +146,7 @@ export default function OptionsPanel({
 
     await updateUserMediaListByStatus({
       status: status,
-      userId: user?.uid || `${anilistUser?.id}`,
+      userId: user?.$id || `${anilistUser?.id}`,
       mediaData: mediaData,
     });
 

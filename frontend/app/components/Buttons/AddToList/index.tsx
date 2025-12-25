@@ -1,17 +1,8 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import styles from "./component.module.css";
-import {
-  getFirestore,
-  doc,
-  getDoc,
-  setDoc,
-  FieldPath,
-} from "firebase/firestore";
-import { initFirebase } from "@/app/firebaseApp";
-import { getAuth } from "firebase/auth";
 import { MediaData } from "@/app/ts/interfaces/anilistMediaData";
-import { useAuthState } from "react-firebase-hooks/auth";
+import { useAuthState, getUserDocument } from "@/app/lib/appwrite";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   removeMediaOnListByStatus,
@@ -48,25 +39,20 @@ export function Button({
   const anilistUser = useAppSelector((state) => state.UserInfo.value);
   const dispatch = useAppDispatch();
 
-  const auth = getAuth();
-
-  const [user] = useAuthState(auth);
-
-  const db = getFirestore(initFirebase());
+  const { user } = useAuthState();
 
   useEffect(() => {
     if (!statusOnAnilist && user) {
       isMediaOnUserDoc();
     }
-  }, [statusOnAnilist]);
+  }, [statusOnAnilist, user]);
 
   // IF MEDIA ID MATCHS ANY RESULT ON DB, IT SETS THIS COMPONENT BUTTON AS ACTIVE
   async function isMediaOnUserDoc() {
     if (!user) return;
 
-    const userMediaLists = await getDoc(doc(db, "users", user.uid)).then(
-      (res) => res.data()?.mediaListSavedByStatus
-    );
+    const userDoc = await getUserDocument(user.$id);
+    const userMediaLists = userDoc?.mediaListSavedByStatus ? JSON.parse(userDoc.mediaListSavedByStatus) : null;
 
     if (!userMediaLists) return;
 
@@ -101,15 +87,16 @@ export function Button({
       allEpisodes.push(mapAllEpisodesInfo(key))
     );
 
-    await setDoc(
-      doc(db, "users", user?.uid || `${anilistUser?.id}`),
-      {
-        episodesWatched: {
-          [mediaInfo.id]: action == "add" ? allEpisodes : null,
-        },
-      } as unknown as FieldPath,
-      { merge: true }
-    );
+    const { updateUserDocument } = await import("@/app/lib/appwrite/database");
+    const userId = user?.$id || `${anilistUser?.id}`;
+    const userDoc = await getUserDocument(userId);
+    const currentEpisodesWatched = userDoc?.episodesWatched ? JSON.parse(userDoc.episodesWatched) : {};
+    
+    currentEpisodesWatched[mediaInfo.id] = action == "add" ? allEpisodes : null;
+    
+    await updateUserDocument(userId, {
+      episodesWatched: JSON.stringify(currentEpisodesWatched),
+    });
   }
 
   async function handleAddMediaOnList({
@@ -137,11 +124,9 @@ export function Button({
 
     // Remove from curr list
     if (mediaStatus) {
-      const userMediaList = await getDoc(
-        doc(db, "users", user?.uid || `${anilistUser?.id}`)
-      ).then(
-        (res) => res.data()?.mediaListSavedByStatus[mediaStatus.toLowerCase()]
-      );
+      const userDoc = await getUserDocument(user?.$id || `${anilistUser?.id}`);
+      const userMediaLists = userDoc?.mediaListSavedByStatus ? JSON.parse(userDoc.mediaListSavedByStatus) : {};
+      const userMediaList = userMediaLists[mediaStatus.toLowerCase()] || [];
 
       const filterNewList = userMediaList.filter(
         (media: { id: number }) => media.id != mediaInfo.id
@@ -150,7 +135,7 @@ export function Button({
       await removeMediaOnListByStatus({
         newListFiltered: filterNewList,
         status: mediaStatus,
-        userId: user?.uid || `${anilistUser?.id}`,
+        userId: user?.$id || `${anilistUser?.id}`,
       });
 
       // Remove from anilist list
@@ -171,7 +156,7 @@ export function Button({
 
     await updateUserMediaListByStatus({
       status: status,
-      userId: user?.uid || `${anilistUser?.id}`,
+      userId: user?.$id || `${anilistUser?.id}`,
       mediaData: mediaData,
     });
 
